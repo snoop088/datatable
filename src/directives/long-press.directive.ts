@@ -1,11 +1,6 @@
 import {
-  Directive,
-  Input,
-  Output,
-  EventEmitter,
-  HostBinding,
-  HostListener,
-  OnDestroy
+  Directive, Input, Output, EventEmitter, HostBinding,
+  HostListener, OnDestroy
 } from '@angular/core';
 import { Observable } from 'rxjs/Observable';
 import { Subscription } from 'rxjs/Subscription';
@@ -14,9 +9,10 @@ import 'rxjs/add/operator/takeUntil';
 @Directive({ selector: '[long-press]' })
 export class LongPressDirective implements OnDestroy {
 
+  @Input() pressModel: any;
   @Input() duration: number = 500;
 
-  @Output() longPress: EventEmitter<any> = new EventEmitter();
+  @Output() longPressStart: EventEmitter<any> = new EventEmitter();
   @Output() longPressing: EventEmitter<any> = new EventEmitter();
   @Output() longPressEnd: EventEmitter<any> = new EventEmitter();
 
@@ -36,7 +32,7 @@ export class LongPressDirective implements OnDestroy {
     return this.isLongPressing;
   }
 
-  @HostListener('mousedown', ['$event'])
+  @HostListener('mousedown', [ '$event' ])
   onMouseDown(event: MouseEvent): void {
     // don't do right/middle clicks
     if (event.which !== 1) return;
@@ -52,7 +48,10 @@ export class LongPressDirective implements OnDestroy {
 
     this.timeout = setTimeout(() => {
       this.isLongPressing = true;
-      this.longPress.emit(event);
+      this.longPressStart.emit({
+        event,
+        model: this.pressModel
+      });
 
       this.subscription.add(
         Observable.fromEvent(document, 'mousemove')
@@ -80,7 +79,10 @@ export class LongPressDirective implements OnDestroy {
   loop(event: Event): void {
     if (this.isLongPressing) {
       this.timeout = setTimeout(() => {
-        this.longPressing.emit(event);
+        this.longPressing.emit({
+          event,
+          model: this.pressModel
+        });
         this.loop(event);
       }, 50);
     }
@@ -92,7 +94,9 @@ export class LongPressDirective implements OnDestroy {
     this.pressing = false;
     this._destroySubscription();
 
-    this.longPressEnd.emit(true);
+    this.longPressEnd.emit({
+      model: this.pressModel
+    });
   }
 
   onMouseup(): void {
@@ -100,14 +104,14 @@ export class LongPressDirective implements OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.subscription) {
-      this._destroySubscription();
-    }
+    this._destroySubscription();
   }
 
-  private _destroySubscription() {
-    this.subscription.unsubscribe();
-    this.subscription = undefined;
+  private _destroySubscription(): void {
+    if (this.subscription) {
+      this.subscription.unsubscribe();
+      this.subscription = undefined;
+    }
   }
 
 }

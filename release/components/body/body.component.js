@@ -1,17 +1,21 @@
-"use strict";
-var core_1 = require('@angular/core');
-var utils_1 = require('../../utils');
-var scroller_component_1 = require('./scroller.component');
+import { Component, Output, EventEmitter, Input, HostBinding, ViewChild } from '@angular/core';
+import { translateXY, columnsByPin, columnGroupWidths, RowHeightCache } from '../../utils';
+import { ScrollerComponent } from './scroller.component';
 var DataTableBodyComponent = (function () {
+    /**
+     * Creates an instance of DataTableBodyComponent.
+     *
+     * @memberOf DataTableBodyComponent
+     */
     function DataTableBodyComponent() {
         this.selected = [];
-        this.scroll = new core_1.EventEmitter();
-        this.page = new core_1.EventEmitter();
-        this.activate = new core_1.EventEmitter();
-        this.select = new core_1.EventEmitter();
-        this.detailToggle = new core_1.EventEmitter();
-        this.rowContextmenu = new core_1.EventEmitter(false);
-        this.rowHeightsCache = new utils_1.RowHeightCache();
+        this.scroll = new EventEmitter();
+        this.page = new EventEmitter();
+        this.activate = new EventEmitter();
+        this.select = new EventEmitter();
+        this.detailToggle = new EventEmitter();
+        this.rowContextmenu = new EventEmitter(false);
+        this.rowHeightsCache = new RowHeightCache();
         this.temp = [];
         this.offsetY = 0;
         this.indexes = {};
@@ -53,8 +57,8 @@ var DataTableBodyComponent = (function () {
         },
         set: function (val) {
             this._columns = val;
-            var colsByPin = utils_1.columnsByPin(val);
-            this.columnGroupWidths = utils_1.columnGroupWidths(colsByPin, val);
+            var colsByPin = columnsByPin(val);
+            this.columnGroupWidths = columnGroupWidths(colsByPin, val);
         },
         enumerable: true,
         configurable: true
@@ -141,15 +145,6 @@ var DataTableBodyComponent = (function () {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(DataTableBodyComponent.prototype, "detailRowHeight", {
-        get: function () {
-            if (!this.rowDetail)
-                return 0;
-            return this.rowDetail.rowHeight;
-        },
-        enumerable: true,
-        configurable: true
-    });
     /**
      * Called after the constructor, initializing input properties
      *
@@ -185,9 +180,8 @@ var DataTableBodyComponent = (function () {
      */
     DataTableBodyComponent.prototype.updateOffsetY = function (offset) {
         // scroller is missing on empty table
-        if (!this.scroller) {
+        if (!this.scroller)
             return;
-        }
         if (this.scrollbarV && offset) {
             // First get the row Index that we need to move to.
             var rowIndex = this.pageSize * offset;
@@ -230,7 +224,7 @@ var DataTableBodyComponent = (function () {
     DataTableBodyComponent.prototype.updatePage = function (direction) {
         var offset = this.indexes.first / this.pageSize;
         if (direction === 'up') {
-            offset = Math.floor(offset);
+            offset = Math.ceil(offset);
         }
         else if (direction === 'down') {
             offset = Math.ceil(offset);
@@ -261,6 +255,22 @@ var DataTableBodyComponent = (function () {
         this.temp = temp;
     };
     /**
+     * Get the row height
+     *
+     * @param {*} row
+     * @returns {number}
+     *
+     * @memberOf DataTableBodyComponent
+     */
+    DataTableBodyComponent.prototype.getRowHeight = function (row) {
+        var rowHeight = this.rowHeight;
+        // if its a function return it
+        if (typeof this.rowHeight === 'function') {
+            rowHeight = this.rowHeight(row);
+        }
+        return rowHeight;
+    };
+    /**
      * Calculate row height based on the expanded state of the row.
      *
      * @param {*} row the row for which the height need to be calculated.
@@ -268,10 +278,28 @@ var DataTableBodyComponent = (function () {
      *
      * @memberOf DataTableBodyComponent
      */
-    DataTableBodyComponent.prototype.getRowHeight = function (row) {
+    DataTableBodyComponent.prototype.getRowAndDetailHeight = function (row) {
+        var rowHeight = this.getRowHeight(row);
         // Adding detail row height if its expanded.
-        return this.rowHeight +
-            (row.$$expanded === 1 ? this.detailRowHeight : 0);
+        if (row.$$expanded === 1) {
+            rowHeight += this.getDetailRowHeight(row);
+        }
+        return rowHeight;
+    };
+    /**
+     * Get the height of the detail row.
+     *
+     * @param {*} [row]
+     * @param {*} [index]
+     * @returns {number}
+     *
+     * @memberOf DataTableBodyComponent
+     */
+    DataTableBodyComponent.prototype.getDetailRowHeight = function (row, index) {
+        if (!this.rowDetail)
+            return 0;
+        var rowHeight = this.rowDetail.rowHeight;
+        return typeof rowHeight === 'function' ? rowHeight(row, index) : rowHeight;
     };
     /**
      * Calculates the styles for the row so that the rows can be moved in 2D space
@@ -294,7 +322,7 @@ var DataTableBodyComponent = (function () {
      * @memberOf DataTableBodyComponent
      */
     DataTableBodyComponent.prototype.getRowsStyles = function (row) {
-        var rowHeight = this.getRowHeight(row);
+        var rowHeight = this.getRowAndDetailHeight(row);
         var styles = {
             height: rowHeight + 'px'
         };
@@ -304,7 +332,7 @@ var DataTableBodyComponent = (function () {
             // The position of this row would be the sum of all row heights
             // until the previous row position.
             var pos = this.rowHeightsCache.query(idx - 1);
-            utils_1.translateXY(styles, 0, pos);
+            translateXY(styles, 0, pos);
         }
         return styles;
     };
@@ -357,7 +385,7 @@ var DataTableBodyComponent = (function () {
         this.rowHeightsCache.clearCache();
         // Initialize the tree only if there are rows inside the tree.
         if (this.rows && this.rows.length) {
-            this.rowHeightsCache.initCache(this.rows, this.rowHeight, this.detailRowHeight);
+            this.rowHeightsCache.initCache(this.rows, this.rowHeight, this.getDetailRowHeight());
         }
     };
     /**
@@ -393,7 +421,7 @@ var DataTableBodyComponent = (function () {
         var viewPortFirstRowIndex = this.getAdjustedViewPortIndex();
         // If the detailRowHeight is auto --> only in case of non-virtualized scroll
         if (this.scrollbarV) {
-            var detailRowHeight = this.detailRowHeight * (row.$$expanded ? -1 : 1);
+            var detailRowHeight = this.getDetailRowHeight(row) * (row.$$expanded ? -1 : 1);
             this.rowHeightsCache.update(row.$$index, detailRowHeight);
         }
         // Update the toggled row and update the heights in the cache.
@@ -420,7 +448,7 @@ var DataTableBodyComponent = (function () {
         }
         if (this.scrollbarV) {
             // Refresh the full row heights cache since every row was affected.
-            this.refreshRowHeightCache();
+            this.recalcLayout();
         }
         // Emit all rows that have been expanded.
         this.detailToggle.emit({
@@ -438,47 +466,48 @@ var DataTableBodyComponent = (function () {
         this.updateIndexes();
         this.updateRows();
     };
-    DataTableBodyComponent.decorators = [
-        { type: core_1.Component, args: [{
-                    selector: 'datatable-body',
-                    template: "\n    <datatable-selection\n      #selector\n      [selected]=\"selected\"\n      [rows]=\"temp\"\n      [selectCheck]=\"selectCheck\"\n      [selectEnabled]=\"selectEnabled\"\n      [selectionType]=\"selectionType\"\n      [rowIdentity]=\"rowIdentity\"\n      (select)=\"select.emit($event)\"\n      (activate)=\"activate.emit($event)\">\n      <datatable-progress\n        *ngIf=\"loadingIndicator\">\n      </datatable-progress>\n      <datatable-scroller\n        *ngIf=\"rows?.length\"\n        [scrollbarV]=\"scrollbarV\"\n        [scrollbarH]=\"scrollbarH\"\n        [scrollHeight]=\"scrollHeight\"\n        [scrollWidth]=\"columnGroupWidths.total\"\n        (scroll)=\"onBodyScroll($event)\">\n        <datatable-row-wrapper\n          *ngFor=\"let row of temp; let i = index; trackBy: rowTrackingFn;\"\n          [ngStyle]=\"getRowsStyles(row)\"\n          [rowDetail]=\"rowDetail\"\n          [detailRowHeight]=\"detailRowHeight\"\n          [row]=\"row\"\n          [expanded]=\"row.$$expanded === 1\"\n          (rowContextmenu)=\"rowContextmenu.emit($event)\">\n          <datatable-body-row\n            tabindex=\"-1\"\n            [isSelected]=\"selector.getRowSelected(row)\"\n            [innerWidth]=\"innerWidth\"\n            [offsetX]=\"offsetX\"\n            [columns]=\"columns\"\n            [rowHeight]=\"rowHeight\"\n            [row]=\"row\"\n            (activate)=\"selector.onActivate($event, i)\">\n          </datatable-body-row>\n        </datatable-row-wrapper>\n      </datatable-scroller>\n      <div\n        class=\"empty-row\"\n        *ngIf=\"!rows?.length\"\n        [innerHTML]=\"emptyMessage\">\n      </div>\n    </datatable-selection>\n  ",
-                    host: {
-                        class: 'datatable-body'
-                    }
-                },] },
-    ];
-    /** @nocollapse */
-    DataTableBodyComponent.ctorParameters = function () { return []; };
-    DataTableBodyComponent.propDecorators = {
-        'scrollbarV': [{ type: core_1.Input },],
-        'scrollbarH': [{ type: core_1.Input },],
-        'loadingIndicator': [{ type: core_1.Input },],
-        'rowHeight': [{ type: core_1.Input },],
-        'offsetX': [{ type: core_1.Input },],
-        'emptyMessage': [{ type: core_1.Input },],
-        'selectionType': [{ type: core_1.Input },],
-        'selected': [{ type: core_1.Input },],
-        'rowIdentity': [{ type: core_1.Input },],
-        'rowDetail': [{ type: core_1.Input },],
-        'selectCheck': [{ type: core_1.Input },],
-        'trackByProp': [{ type: core_1.Input },],
-        'pageSize': [{ type: core_1.Input },],
-        'rows': [{ type: core_1.Input },],
-        'columns': [{ type: core_1.Input },],
-        'offset': [{ type: core_1.Input },],
-        'rowCount': [{ type: core_1.Input },],
-        'innerWidth': [{ type: core_1.Input },],
-        'bodyWidth': [{ type: core_1.HostBinding, args: ['style.width',] },],
-        'bodyHeight': [{ type: core_1.Input }, { type: core_1.HostBinding, args: ['style.height',] },],
-        'scroll': [{ type: core_1.Output },],
-        'page': [{ type: core_1.Output },],
-        'activate': [{ type: core_1.Output },],
-        'select': [{ type: core_1.Output },],
-        'detailToggle': [{ type: core_1.Output },],
-        'rowContextmenu': [{ type: core_1.Output },],
-        'scroller': [{ type: core_1.ViewChild, args: [scroller_component_1.ScrollerComponent,] },],
-    };
     return DataTableBodyComponent;
 }());
-exports.DataTableBodyComponent = DataTableBodyComponent;
+export { DataTableBodyComponent };
+DataTableBodyComponent.decorators = [
+    { type: Component, args: [{
+                selector: 'datatable-body',
+                template: "\n    <datatable-selection\n      #selector\n      [selected]=\"selected\"\n      [rows]=\"temp\"\n      [selectCheck]=\"selectCheck\"\n      [selectEnabled]=\"selectEnabled\"\n      [selectionType]=\"selectionType\"\n      [rowIdentity]=\"rowIdentity\"\n      (select)=\"select.emit($event)\"\n      (activate)=\"activate.emit($event)\">\n      <datatable-progress\n        *ngIf=\"loadingIndicator\">\n      </datatable-progress>\n      <datatable-scroller\n        *ngIf=\"rows?.length\"\n        [scrollbarV]=\"scrollbarV\"\n        [scrollbarH]=\"scrollbarH\"\n        [scrollHeight]=\"scrollHeight\"\n        [scrollWidth]=\"columnGroupWidths.total\"\n        (scroll)=\"onBodyScroll($event)\">\n        <datatable-row-wrapper\n          *ngFor=\"let row of temp; let i = index; trackBy: rowTrackingFn;\"\n          [ngStyle]=\"getRowsStyles(row)\"\n          [rowDetail]=\"rowDetail\"\n          [detailRowHeight]=\"getDetailRowHeight(row,i)\"\n          [row]=\"row\"\n          [expanded]=\"row.$$expanded === 1\"\n          (rowContextmenu)=\"rowContextmenu.emit($event)\">\n          <datatable-body-row\n            tabindex=\"-1\"\n            [isSelected]=\"selector.getRowSelected(row)\"\n            [innerWidth]=\"innerWidth\"\n            [offsetX]=\"offsetX\"\n            [columns]=\"columns\"\n            [rowHeight]=\"getRowHeight(row)\"\n            [row]=\"row\"\n            [rowClass]=\"rowClass\"\n            (activate)=\"selector.onActivate($event, i)\">\n          </datatable-body-row>\n        </datatable-row-wrapper>\n      </datatable-scroller>\n      <div\n        class=\"empty-row\"\n        *ngIf=\"!rows?.length\"\n        [innerHTML]=\"emptyMessage\">\n      </div>\n    </datatable-selection>\n  ",
+                host: {
+                    class: 'datatable-body'
+                }
+            },] },
+];
+/** @nocollapse */
+DataTableBodyComponent.ctorParameters = function () { return []; };
+DataTableBodyComponent.propDecorators = {
+    'scrollbarV': [{ type: Input },],
+    'scrollbarH': [{ type: Input },],
+    'loadingIndicator': [{ type: Input },],
+    'rowHeight': [{ type: Input },],
+    'offsetX': [{ type: Input },],
+    'emptyMessage': [{ type: Input },],
+    'selectionType': [{ type: Input },],
+    'selected': [{ type: Input },],
+    'rowIdentity': [{ type: Input },],
+    'rowDetail': [{ type: Input },],
+    'selectCheck': [{ type: Input },],
+    'trackByProp': [{ type: Input },],
+    'rowClass': [{ type: Input },],
+    'pageSize': [{ type: Input },],
+    'rows': [{ type: Input },],
+    'columns': [{ type: Input },],
+    'offset': [{ type: Input },],
+    'rowCount': [{ type: Input },],
+    'innerWidth': [{ type: Input },],
+    'bodyWidth': [{ type: HostBinding, args: ['style.width',] },],
+    'bodyHeight': [{ type: Input }, { type: HostBinding, args: ['style.height',] },],
+    'scroll': [{ type: Output },],
+    'page': [{ type: Output },],
+    'activate': [{ type: Output },],
+    'select': [{ type: Output },],
+    'detailToggle': [{ type: Output },],
+    'rowContextmenu': [{ type: Output },],
+    'scroller': [{ type: ViewChild, args: [ScrollerComponent,] },],
+};
 //# sourceMappingURL=body.component.js.map

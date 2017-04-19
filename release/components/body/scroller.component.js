@@ -1,11 +1,10 @@
-"use strict";
-var core_1 = require('@angular/core');
+import { Component, Input, ElementRef, Output, EventEmitter, Renderer, HostBinding } from '@angular/core';
 var ScrollerComponent = (function () {
     function ScrollerComponent(element, renderer) {
         this.renderer = renderer;
         this.scrollbarV = false;
         this.scrollbarH = false;
-        this.scroll = new core_1.EventEmitter();
+        this.scroll = new EventEmitter();
         this.scrollYPos = 0;
         this.scrollXPos = 0;
         this.prevScrollYPos = 0;
@@ -51,28 +50,28 @@ var ScrollerComponent = (function () {
         this.prevScrollYPos = this.scrollYPos;
         this.prevScrollXPos = this.scrollXPos;
     };
-    ScrollerComponent.decorators = [
-        { type: core_1.Component, args: [{
-                    selector: 'datatable-scroller',
-                    template: "\n    <ng-content></ng-content>\n  ",
-                    host: {
-                        class: 'datatable-scroll'
-                    }
-                },] },
-    ];
-    /** @nocollapse */
-    ScrollerComponent.ctorParameters = function () { return [
-        { type: core_1.ElementRef, },
-        { type: core_1.Renderer, },
-    ]; };
-    ScrollerComponent.propDecorators = {
-        'scrollbarV': [{ type: core_1.Input },],
-        'scrollbarH': [{ type: core_1.Input },],
-        'scrollHeight': [{ type: core_1.HostBinding, args: ['style.height.px',] }, { type: core_1.Input },],
-        'scrollWidth': [{ type: core_1.HostBinding, args: ['style.width.px',] }, { type: core_1.Input },],
-        'scroll': [{ type: core_1.Output },],
-    };
     return ScrollerComponent;
 }());
-exports.ScrollerComponent = ScrollerComponent;
+export { ScrollerComponent };
+ScrollerComponent.decorators = [
+    { type: Component, args: [{
+                selector: 'datatable-scroller',
+                template: "\n    <ng-content></ng-content>\n  ",
+                host: {
+                    class: 'datatable-scroll'
+                }
+            },] },
+];
+/** @nocollapse */
+ScrollerComponent.ctorParameters = function () { return [
+    { type: ElementRef, },
+    { type: Renderer, },
+]; };
+ScrollerComponent.propDecorators = {
+    'scrollbarV': [{ type: Input },],
+    'scrollbarH': [{ type: Input },],
+    'scrollHeight': [{ type: HostBinding, args: ['style.height.px',] }, { type: Input },],
+    'scrollWidth': [{ type: HostBinding, args: ['style.width.px',] }, { type: Input },],
+    'scroll': [{ type: Output },],
+};
 //# sourceMappingURL=scroller.component.js.map

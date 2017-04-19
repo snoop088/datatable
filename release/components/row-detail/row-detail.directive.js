@@ -1,13 +1,12 @@
-"use strict";
-var core_1 = require('@angular/core');
-var row_detail_template_directive_1 = require('./row-detail-template.directive');
+import { Input, Output, EventEmitter, Directive, TemplateRef, ContentChild } from '@angular/core';
+import { DatatableRowDetailTemplateDirective } from './row-detail-template.directive';
 var DatatableRowDetailDirective = (function () {
     function DatatableRowDetailDirective() {
         /**
          * The detail row height is required especially
          * when virtual scroll is enabled.
          *
-         * @type {number}
+         * @type {number|function(row?:any,index?:any): number}
          * @memberOf DatatableComponent
          */
         this.rowHeight = 0;
@@ -17,7 +16,7 @@ var DatatableRowDetailDirective = (function () {
          * @type {EventEmitter<any>}
          * @memberOf DatatableComponent
          */
-        this.toggle = new core_1.EventEmitter();
+        this.toggle = new EventEmitter();
     }
     /**
      * Toggle the expansion of the row
@@ -52,17 +51,17 @@ var DatatableRowDetailDirective = (function () {
             value: false
         });
     };
-    DatatableRowDetailDirective.decorators = [
-        { type: core_1.Directive, args: [{ selector: 'ngx-datatable-row-detail' },] },
-    ];
-    /** @nocollapse */
-    DatatableRowDetailDirective.ctorParameters = function () { return []; };
-    DatatableRowDetailDirective.propDecorators = {
-        'rowHeight': [{ type: core_1.Input },],
-        'template': [{ type: core_1.Input }, { type: core_1.ContentChild, args: [row_detail_template_directive_1.DatatableRowDetailTemplateDirective, { read: core_1.TemplateRef },] },],
-        'toggle': [{ type: core_1.Output },],
-    };
     return DatatableRowDetailDirective;
 }());
-exports.DatatableRowDetailDirective = DatatableRowDetailDirective;
+export { DatatableRowDetailDirective };
+DatatableRowDetailDirective.decorators = [
+    { type: Directive, args: [{ selector: 'ngx-datatable-row-detail' },] },
+];
+/** @nocollapse */
+DatatableRowDetailDirective.ctorParameters = function () { return []; };
+DatatableRowDetailDirective.propDecorators = {
+    'rowHeight': [{ type: Input },],
+    'template': [{ type: Input }, { type: ContentChild, args: [DatatableRowDetailTemplateDirective, { read: TemplateRef },] },],
+    'toggle': [{ type: Output },],
+};
 //# sourceMappingURL=row-detail.directive.js.map

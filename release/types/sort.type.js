@@ -1,7 +1,6 @@
-"use strict";
+export var SortType;
 (function (SortType) {
     SortType[SortType["single"] = 'single'] = "single";
     SortType[SortType["multi"] = 'multi'] = "multi";
-})(exports.SortType || (exports.SortType = {}));
-var SortType = exports.SortType;
+})(SortType || (SortType = {}));
 //# sourceMappingURL=sort.type.js.map

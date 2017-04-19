@@ -1,34 +1,32 @@
-"use strict";
-var types_1 = require('../types');
-var deep_getter_1 = require('./deep-getter');
+import { SortType, SortDirection } from '../types';
+import { getterForProp } from './column-prop-getters';
 /**
  * Gets the next sort direction
  * @param  {SortType}      sortType
  * @param  {SortDirection} currentSort
  * @return {SortDirection}
  */
-function nextSortDir(sortType, current) {
-    if (sortType === types_1.SortType.single) {
-        if (current === types_1.SortDirection.asc) {
-            return types_1.SortDirection.desc;
+export function nextSortDir(sortType, current) {
+    if (sortType === SortType.single) {
+        if (current === SortDirection.asc) {
+            return SortDirection.desc;
         }
         else {
-            return types_1.SortDirection.asc;
+            return SortDirection.asc;
         }
     }
     else {
         if (!current) {
-            return types_1.SortDirection.asc;
+            return SortDirection.asc;
         }
-        else if (current === types_1.SortDirection.asc) {
-            return types_1.SortDirection.desc;
+        else if (current === SortDirection.asc) {
+            return SortDirection.desc;
         }
-        else if (current === types_1.SortDirection.desc) {
+        else if (current === SortDirection.desc) {
             return undefined;
         }
     }
 }
-exports.nextSortDir = nextSortDir;
 ;
 /**
  * Adapted from fueld-ui on 6/216
@@ -37,7 +35,7 @@ exports.nextSortDir = nextSortDir;
  * @param  {any}    b
  * @return {number} position
  */
-function orderByComparator(a, b) {
+export function orderByComparator(a, b) {
     if (a === null || typeof a === 'undefined')
         a = 0;
     if (b === null || typeof b === 'undefined')
@@ -62,7 +60,6 @@ function orderByComparator(a, b) {
     // equal each other
     return 0;
 }
-exports.orderByComparator = orderByComparator;
 /**
  * Sorts the rows
  *
@@ -72,7 +69,7 @@ exports.orderByComparator = orderByComparator;
  * @param {any[]} dirs
  * @returns
  */
-function sortRows(rows, columns, dirs) {
+export function sortRows(rows, columns, dirs) {
     if (!rows || !dirs || !dirs.length || !columns)
         return rows;
     var temp = rows.slice();
@@ -82,15 +79,26 @@ function sortRows(rows, columns, dirs) {
         }
         return obj;
     }, {});
+    // cache valueGetter and compareFn so that they
+    // do not need to be looked-up in the sort function body
+    var cachedDirs = dirs.map(function (dir) {
+        var prop = dir.prop;
+        return {
+            prop: prop,
+            dir: dir.dir,
+            valueGetter: getterForProp(prop),
+            compareFn: cols[prop] || orderByComparator
+        };
+    });
     return temp.sort(function (a, b) {
-        for (var _i = 0, dirs_1 = dirs; _i < dirs_1.length; _i++) {
-            var _a = dirs_1[_i], prop = _a.prop, dir = _a.dir;
-            var propA = deep_getter_1.deepValueGetter(a, prop);
-            var propB = deep_getter_1.deepValueGetter(b, prop);
-            var compareFn = cols[prop] || orderByComparator;
-            var comparison = dir !== types_1.SortDirection.desc ?
-                compareFn(propA, propB) :
-                -compareFn(propA, propB);
+        for (var _i = 0, cachedDirs_1 = cachedDirs; _i < cachedDirs_1.length; _i++) {
+            var cachedDir = cachedDirs_1[_i];
+            var prop = cachedDir.prop, valueGetter = cachedDir.valueGetter;
+            var propA = valueGetter(a, prop);
+            var propB = valueGetter(b, prop);
+            var comparison = cachedDir.dir !== SortDirection.desc ?
+                cachedDir.compareFn(propA, propB) :
+                -cachedDir.compareFn(propA, propB);
             // Don't return 0 yet in case of needing to sort by next property
             if (comparison !== 0)
                 return comparison;
@@ -99,5 +107,4 @@ function sortRows(rows, columns, dirs) {
         return 0;
     });
 }
-exports.sortRows = sortRows;
 //# sourceMappingURL=sort.js.map

@@ -44,7 +44,7 @@ module.exports = function(options) {
           enforce: 'pre',
           test: /\.ts$/,
           loader: 'tslint-loader',
-          exclude: /(node_modules|release|dist)/
+          exclude: /(node_modules|release|dist|demo)/
         },
         {
           test: /\.ts$/,
@@ -65,7 +65,7 @@ module.exports = function(options) {
       new HtmlWebpackPlugin({
         template: 'demo/index.ejs',
         chunksSortMode: 'dependency',
-        title: 'angular2-data-table'
+        title: 'ngx-datatable'
       }),
       new WebpackNotifierPlugin({
         excludeWarnings: true

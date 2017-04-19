@@ -1,18 +1,17 @@
-"use strict";
-var core_1 = require('@angular/core');
+import { Directive, TemplateRef } from '@angular/core';
 var DataTableColumnHeaderDirective = (function () {
     function DataTableColumnHeaderDirective(template) {
         this.template = template;
     }
     ;
-    DataTableColumnHeaderDirective.decorators = [
-        { type: core_1.Directive, args: [{ selector: '[ngx-datatable-header-template]' },] },
-    ];
-    /** @nocollapse */
-    DataTableColumnHeaderDirective.ctorParameters = function () { return [
-        { type: core_1.TemplateRef, },
-    ]; };
     return DataTableColumnHeaderDirective;
 }());
-exports.DataTableColumnHeaderDirective = DataTableColumnHeaderDirective;
+export { DataTableColumnHeaderDirective };
+DataTableColumnHeaderDirective.decorators = [
+    { type: Directive, args: [{ selector: '[ngx-datatable-header-template]' },] },
+];
+/** @nocollapse */
+DataTableColumnHeaderDirective.ctorParameters = function () { return [
+    { type: TemplateRef, },
+]; };
 //# sourceMappingURL=column-header.directive.js.map

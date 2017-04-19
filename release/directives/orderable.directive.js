@@ -1,9 +1,10 @@
-"use strict";
-var core_1 = require('@angular/core');
-var draggable_directive_1 = require('./draggable.directive');
+import { Directive, Output, EventEmitter, ContentChildren, KeyValueDiffers, Inject } from '@angular/core';
+import { DraggableDirective } from './draggable.directive';
+import { DOCUMENT } from '@angular/platform-browser';
 var OrderableDirective = (function () {
-    function OrderableDirective(differs) {
-        this.reorder = new core_1.EventEmitter();
+    function OrderableDirective(differs, document) {
+        this.document = document;
+        this.reorder = new EventEmitter();
         this.differ = differs.find({}).create(null);
     }
     OrderableDirective.prototype.ngAfterContentInit = function () {
@@ -47,31 +48,49 @@ var OrderableDirective = (function () {
         for (var _i = 0, _a = this.draggables.toArray(); _i < _a.length; _i++) {
             var dragger = _a[_i];
             var elm = dragger.element;
+            var left = parseInt(elm.offsetLeft.toString(), 0);
             this.positions[dragger.dragModel.prop] = {
-                left: parseInt(elm.offsetLeft.toString(), 0),
-                index: i++
+                left: left,
+                right: left + parseInt(elm.offsetWidth.toString(), 0),
+                index: i++,
+                element: elm
             };
         }
     };
     OrderableDirective.prototype.onDragEnd = function (_a) {
-        var element = _a.element, model = _a.model;
-        var newPos = parseInt(element.offsetLeft.toString(), 0);
+        var element = _a.element, model = _a.model, event = _a.event;
         var prevPos = this.positions[model.prop];
-        var i = 0;
-        for (var prop in this.positions) {
-            var pos = this.positions[prop];
-            var movedLeft = newPos < pos.left && prevPos.left > pos.left;
-            var movedRight = newPos > pos.left && prevPos.left < pos.left;
-            if (movedLeft || movedRight) {
-                this.reorder.emit({
-                    prevIndex: prevPos.index,
-                    newIndex: i,
-                    model: model
-                });
-            }
-            i++;
+        var target = this.isTarget(model, event);
+        if (target) {
+            this.reorder.emit({
+                prevIndex: prevPos.index,
+                newIndex: target.i,
+                model: model
+            });
         }
         element.style.left = 'auto';
+    };
+    OrderableDirective.prototype.isTarget = function (model, event) {
+        var i = 0;
+        var targets = this.document.elementsFromPoint(event.x, event.y);
+        var _loop_1 = function (prop) {
+            // current column position which throws event.
+            var pos = this_1.positions[prop];
+            // since we drag the inner span, we need to find it in the elements at the cursor
+            if (model.prop !== prop && targets.find(function (el) { return el === pos.element; })) {
+                return { value: {
+                        pos: pos,
+                        i: i
+                    } };
+            }
+            i++;
+        };
+        var this_1 = this;
+        for (var prop in this.positions) {
+            var state_1 = _loop_1(prop);
+            if (typeof state_1 === "object")
+                return state_1.value;
+        }
     };
     OrderableDirective.prototype.createMapDiffs = function () {
         return this.draggables.toArray()
@@ -80,18 +99,19 @@ var OrderableDirective = (function () {
             return acc;
         }, {});
     };
-    OrderableDirective.decorators = [
-        { type: core_1.Directive, args: [{ selector: '[orderable]' },] },
-    ];
-    /** @nocollapse */
-    OrderableDirective.ctorParameters = function () { return [
-        { type: core_1.KeyValueDiffers, },
-    ]; };
-    OrderableDirective.propDecorators = {
-        'reorder': [{ type: core_1.Output },],
-        'draggables': [{ type: core_1.ContentChildren, args: [draggable_directive_1.DraggableDirective, { descendants: true },] },],
-    };
     return OrderableDirective;
 }());
-exports.OrderableDirective = OrderableDirective;
+export { OrderableDirective };
+OrderableDirective.decorators = [
+    { type: Directive, args: [{ selector: '[orderable]' },] },
+];
+/** @nocollapse */
+OrderableDirective.ctorParameters = function () { return [
+    { type: KeyValueDiffers, },
+    { type: undefined, decorators: [{ type: Inject, args: [DOCUMENT,] },] },
+]; };
+OrderableDirective.propDecorators = {
+    'reorder': [{ type: Output },],
+    'draggables': [{ type: ContentChildren, args: [DraggableDirective, { descendants: true },] },],
+};
 //# sourceMappingURL=orderable.directive.js.map

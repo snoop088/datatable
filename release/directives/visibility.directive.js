@@ -1,5 +1,4 @@
-"use strict";
-var core_1 = require('@angular/core');
+import { Directive, Output, EventEmitter, ElementRef, HostBinding, NgZone } from '@angular/core';
 /**
  * Visibility Observer Directive
  *
@@ -16,7 +15,7 @@ var VisibilityDirective = (function () {
         this.element = element;
         this.zone = zone;
         this.isVisible = false;
-        this.visible = new core_1.EventEmitter();
+        this.visible = new EventEmitter();
     }
     VisibilityDirective.prototype.ngOnInit = function () {
         this.runCheck();
@@ -50,19 +49,19 @@ var VisibilityDirective = (function () {
         };
         setTimeout(function () { return check(); });
     };
-    VisibilityDirective.decorators = [
-        { type: core_1.Directive, args: [{ selector: '[visibility-observer]' },] },
-    ];
-    /** @nocollapse */
-    VisibilityDirective.ctorParameters = function () { return [
-        { type: core_1.ElementRef, },
-        { type: core_1.NgZone, },
-    ]; };
-    VisibilityDirective.propDecorators = {
-        'isVisible': [{ type: core_1.HostBinding, args: ['class.visible',] },],
-        'visible': [{ type: core_1.Output },],
-    };
     return VisibilityDirective;
 }());
-exports.VisibilityDirective = VisibilityDirective;
+export { VisibilityDirective };
+VisibilityDirective.decorators = [
+    { type: Directive, args: [{ selector: '[visibility-observer]' },] },
+];
+/** @nocollapse */
+VisibilityDirective.ctorParameters = function () { return [
+    { type: ElementRef, },
+    { type: NgZone, },
+]; };
+VisibilityDirective.propDecorators = {
+    'isVisible': [{ type: HostBinding, args: ['class.visible',] },],
+    'visible': [{ type: Output },],
+};
 //# sourceMappingURL=visibility.directive.js.map

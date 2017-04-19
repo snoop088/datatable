@@ -1,9 +1,11 @@
-import { ElementRef, EventEmitter, OnInit, QueryList, AfterViewInit, IterableDiffer, DoCheck, KeyValueDiffers } from '@angular/core';
-import { ColumnMode, SortType, SelectionType } from '../types';
+import { ElementRef, EventEmitter, OnInit, QueryList, AfterViewInit, DoCheck, KeyValueDiffers, KeyValueDiffer } from '@angular/core';
+import { ScrollbarHelper } from '../services';
+import { ColumnMode, SortType, SelectionType, TableColumn } from '../types';
 import { DataTableBodyComponent } from './body';
 import { DataTableColumnDirective } from './columns';
 import { DatatableRowDetailDirective } from './row-detail';
 export declare class DatatableComponent implements OnInit, AfterViewInit, DoCheck {
+    private scrollbarHelper;
     /**
      * Gets the rows.
      *
@@ -29,7 +31,7 @@ export declare class DatatableComponent implements OnInit, AfterViewInit, DoChec
      *
      * @memberOf DatatableComponent
      */
-    columns: any[];
+    columns: TableColumn[];
     /**
      * List of row objects that should be
      * represented as selected in the grid.
@@ -206,6 +208,17 @@ export declare class DatatableComponent implements OnInit, AfterViewInit, DoChec
      * @memberOf DatatableComponent
      */
     rowIdentity: (x: any) => any;
+    /**
+     * Row specific classes.
+     * Similar implementation to ngClass.
+     *
+     *  [rowClass]="'first second'"
+     *  [rowClass]="{ 'first': true, 'second': true, 'third': false }"
+     *
+     * @type {*}
+     * @memberOf DatatableComponent
+     */
+    rowClass: any;
     /**
      * A boolean/function you can use to check whether you want
      * to select a particular row based on a criteria. Example:
@@ -411,12 +424,12 @@ export declare class DatatableComponent implements OnInit, AfterViewInit, DoChec
     bodyHeight: number;
     rowCount: number;
     offsetX: number;
-    rowDiffer: IterableDiffer;
+    rowDiffer: KeyValueDiffer<{}, {}>;
     _count: number;
     _rows: any[];
-    _columns: any[];
+    _columns: TableColumn[];
     _columnTemplates: QueryList<DataTableColumnDirective>;
-    constructor(element: ElementRef, differs: KeyValueDiffers);
+    constructor(scrollbarHelper: ScrollbarHelper, element: ElementRef, differs: KeyValueDiffers);
     /**
      * Lifecycle hook that is called after data-bound
      * properties of a directive are initialized.
@@ -462,7 +475,7 @@ export declare class DatatableComponent implements OnInit, AfterViewInit, DoChec
      * distribution mode and scrollbar offsets.
      *
      * @param {any[]} [columns=this.columns]
-     * @param {number} [forceIdx=false]
+     * @param {number} [forceIdx=-1]
      * @param {boolean} [allowBleed=this.scrollH]
      * @returns {any[]}
      *

@@ -1,12 +1,13 @@
 import { TemplateRef } from '@angular/core';
+import { TableColumnProp } from '../../types';
 export declare class DataTableColumnDirective {
     name: string;
-    prop: string;
+    prop: TableColumnProp;
     frozenLeft: any;
     frozenRight: any;
     flexGrow: number;
     resizeable: boolean;
-    comparator: Function;
+    comparator: any;
     pipe: any;
     sortable: boolean;
     draggable: boolean;

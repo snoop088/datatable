@@ -3,9 +3,9 @@ import {
 } from '@angular/core';
 
 import {
-  columnsByPin, columnGroupWidths, columnsByPinArr,
-  translateXY, Keys, scrollbarWidth, throttleable
+  columnsByPin, columnGroupWidths, columnsByPinArr, translateXY, Keys
 } from '../../utils';
+import { ScrollbarHelper } from '../../services';
 
 @Component({
   selector: 'datatable-body-row',
@@ -24,10 +24,7 @@ import {
         (activate)="onActivate($event, ii)">
       </datatable-body-cell>
     </div>
-  `,
-  host: {
-    class: 'datatable-body-row'
-  }
+  `
 })
 export class DataTableBodyRowComponent {
 
@@ -49,24 +46,35 @@ export class DataTableBodyRowComponent {
     return this._innerWidth;
   }
 
+  @Input() rowClass: any;
   @Input() row: any;
   @Input() offsetX: number;
+  @Input() isSelected: boolean;
+
+  @HostBinding('class')
+  get cssClass() {
+    let cls = 'datatable-body-row';
+    if(this.isSelected) cls += ' active';
+    if(this.row.$$index % 2 !== 0) cls += ' datatable-row-odd';
+    if(this.row.$$index % 2 === 0) cls += ' datatable-row-even';
+
+    if(this.rowClass) {
+      const res = this.rowClass(this.row);
+      if(typeof res === 'string') {
+        cls += res;
+      } else if(typeof res === 'object') {
+        const keys = Object.keys(res);
+        for(const k of keys) {
+          if(res[k] === true) cls += ` ${k}`;
+        }
+      }
+    }
+
+    return cls;
+  }
 
   @HostBinding('style.height.px')
   @Input() rowHeight: number;
-
-  @HostBinding('class.active')
-  @Input() isSelected: boolean;
-
-  @HostBinding('class.datatable-row-even')
-  get isEvenRow(): boolean {
-    return this.row.$$index % 2 === 0;
-  }
-
-  @HostBinding('class.datatable-row-odd')
-  get isOddRow(): boolean {
-    return this.row.$$index % 2 !== 0;
-  }
 
   @HostBinding('style.width.px')
   get columnsTotalWidths(): string {
@@ -80,31 +88,10 @@ export class DataTableBodyRowComponent {
   columnsByPin: any;
   _columns: any[];
   _innerWidth: number;
-  timeout: any;
 
-  constructor(element: ElementRef) {
+  constructor(private scrollbarHelper: ScrollbarHelper, element: ElementRef) {
     this.element = element.nativeElement;
   }
-
-  // @HostListener('window:resize', ['$event'])
-  // onResize(event) {
-  //   console.log(event);
-  // }
-
-  // @HostListener('window:resize', ['$event'])
-  // // @throttleable(5)
-  // onResize(event) {
-  //   let self = this;
-  //   this.timeout = setTimeout(function() {
-  //      for (let index = 0; index < self.columnsByPin.length; index++) {
-  //       let element = self.columnsByPin[index];
-  //       // self.stylesByGroup(element.type);
-  //     }
-  //   }, 1000);
-  //   // console.log(this.columnsByPin)
-   
-  // }
-
 
   trackByGroups(index: number, colGroup: any): any {
     return colGroup.type;
@@ -128,7 +115,7 @@ export class DataTableBodyRowComponent {
       const bodyWidth = parseInt(this.innerWidth + '', 0);
       const totalDiff = widths.total - bodyWidth;
       const offsetDiff = totalDiff - offsetX;
-      const offset = (offsetDiff + scrollbarWidth) * -1;
+      const offset = (offsetDiff + this.scrollbarHelper.width) * -1;
       translateXY(styles, offset, 0);
     }
 

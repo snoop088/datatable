@@ -1,4 +1,3 @@
-"use strict";
 /**
  * This object contains the cache of the various row heights that are present inside
  * the data table.   Its based on Fenwick tree data structure that helps with
@@ -31,11 +30,12 @@ var RowHeightCache = (function () {
      * @param detailRowHeight The detail row height.
      */
     RowHeightCache.prototype.initCache = function (rows, rowHeight, detailRowHeight) {
-        if (isNaN(rowHeight)) {
+        var isFn = typeof rowHeight === 'function';
+        if (!isFn && isNaN(rowHeight)) {
             throw new Error("Row Height cache initialization failed. Please ensure that 'rowHeight' is a\n        valid number value: (" + rowHeight + ") when 'scrollbarV' is enabled.");
         }
         // Add this additional guard in case detailRowHeight is set to 'auto' as it wont work.
-        if (isNaN(detailRowHeight)) {
+        if (!isFn && isNaN(detailRowHeight)) {
             throw new Error("Row Height cache initialization failed. Please ensure that 'detailRowHeight' is a\n        valid number value: (" + detailRowHeight + ") when 'scrollbarV' is enabled.");
         }
         var n = rows.length;
@@ -44,10 +44,14 @@ var RowHeightCache = (function () {
             this.treeArray[i] = 0;
         }
         for (var i = 0; i < n; ++i) {
+            var row = rows[i];
             var currentRowHeight = rowHeight;
+            if (isFn) {
+                currentRowHeight = rowHeight(row);
+            }
             // Add the detail row height to the already expanded rows.
             // This is useful for the table that goes through a filter or sort.
-            if (rows[i] && rows[i].$$expanded === 1) {
+            if (row && row.$$expanded === 1) {
                 currentRowHeight += detailRowHeight;
             }
             this.update(i, currentRowHeight);
@@ -136,5 +140,5 @@ var RowHeightCache = (function () {
     };
     return RowHeightCache;
 }());
-exports.RowHeightCache = RowHeightCache;
+export { RowHeightCache };
 //# sourceMappingURL=row-height-cache.js.map

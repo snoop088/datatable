@@ -1,10 +1,9 @@
-"use strict";
-var column_1 = require('./column');
+import { columnsByPin, columnsTotalWidth } from './column';
 /**
  * Calculates the Total Flex Grow
  * @param {array}
  */
-function getTotalFlexGrow(columns) {
+export function getTotalFlexGrow(columns) {
     var totalFlexGrow = 0;
     for (var _i = 0, columns_1 = columns; _i < columns_1.length; _i++) {
         var c = columns_1[_i];
@@ -12,22 +11,20 @@ function getTotalFlexGrow(columns) {
     }
     return totalFlexGrow;
 }
-exports.getTotalFlexGrow = getTotalFlexGrow;
 /**
  * Adjusts the column widths.
  * Inspired by: https://github.com/facebook/fixed-data-table/blob/master/src/FixedDataTableWidthHelper.js
  * @param {array} all columns
  * @param {int} width
  */
-function adjustColumnWidths(allColumns, expectedWidth) {
-    var columnsWidth = column_1.columnsTotalWidth(allColumns);
+export function adjustColumnWidths(allColumns, expectedWidth) {
+    var columnsWidth = columnsTotalWidth(allColumns);
     var totalFlexGrow = getTotalFlexGrow(allColumns);
-    var colsByGroup = column_1.columnsByPin(allColumns);
+    var colsByGroup = columnsByPin(allColumns);
     if (columnsWidth !== expectedWidth) {
         scaleColumns(colsByGroup, expectedWidth, totalFlexGrow);
     }
 }
-exports.adjustColumnWidths = adjustColumnWidths;
 /**
  * Resizes columns based on the flexGrow property, while respecting manually set widths
  * @param {array} colsByGroup
@@ -75,27 +72,30 @@ function scaleColumns(colsByGroup, maxWidth, totalFlexGrow) {
 }
 /**
  * Forces the width of the columns to
- * distribute equally but overflowing when nesc.
+ * distribute equally but overflowing when necessary
  *
  * Rules:
  *
  *  - If combined withs are less than the total width of the grid,
- *    proporation the widths given the min / max / noraml widths to fill the width.
+ *    proportion the widths given the min / max / normal widths to fill the width.
  *
  *  - If the combined widths, exceed the total width of the grid,
  *    use the standard widths.
  *
  *  - If a column is resized, it should always use that width
  *
- *  - The proporational widths should never fall below min size if specified.
+ *  - The proportional widths should never fall below min size if specified.
  *
  *  - If the grid starts off small but then becomes greater than the size ( + / - )
- *    the width should use the orginial width; not the newly proporatied widths.
+ *    the width should use the original width; not the newly proportioned widths.
  *
  * @param {array} allColumns
  * @param {int} expectedWidth
+ * @param {int} startIdx
+ * @param {boolean} allowBleed
+ * @param {int} defaultColWidth
  */
-function forceFillColumnWidths(allColumns, expectedWidth, startIdx, allowBleed, defaultColWidth) {
+export function forceFillColumnWidths(allColumns, expectedWidth, startIdx, allowBleed, defaultColWidth) {
     if (defaultColWidth === void 0) { defaultColWidth = 300; }
     var columnsToResize = allColumns
         .slice(startIdx + 1, allColumns.length)
@@ -143,7 +143,6 @@ function forceFillColumnWidths(allColumns, expectedWidth, startIdx, allowBleed, 
         removeProcessedColumns(columnsToResize, columnsProcessed);
     } while (remainingWidth > 0 && columnsToResize.length !== 0);
 }
-exports.forceFillColumnWidths = forceFillColumnWidths;
 /**
  * Remove the processed columns from the current active columns.
  *

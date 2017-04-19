@@ -1,9 +1,10 @@
-"use strict";
-var core_1 = require('@angular/core');
-var utils_1 = require('../../utils');
+import { Component, Input, HostBinding, ElementRef, Output, EventEmitter, HostListener } from '@angular/core';
+import { columnsByPin, columnGroupWidths, columnsByPinArr, translateXY, Keys } from '../../utils';
+import { ScrollbarHelper } from '../../services';
 var DataTableBodyRowComponent = (function () {
-    function DataTableBodyRowComponent(element) {
-        this.activate = new core_1.EventEmitter();
+    function DataTableBodyRowComponent(scrollbarHelper, element) {
+        this.scrollbarHelper = scrollbarHelper;
+        this.activate = new EventEmitter();
         this.element = element.nativeElement;
     }
     Object.defineProperty(DataTableBodyRowComponent.prototype, "columns", {
@@ -28,16 +29,30 @@ var DataTableBodyRowComponent = (function () {
         enumerable: true,
         configurable: true
     });
-    Object.defineProperty(DataTableBodyRowComponent.prototype, "isEvenRow", {
+    Object.defineProperty(DataTableBodyRowComponent.prototype, "cssClass", {
         get: function () {
-            return this.row.$$index % 2 === 0;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Object.defineProperty(DataTableBodyRowComponent.prototype, "isOddRow", {
-        get: function () {
-            return this.row.$$index % 2 !== 0;
+            var cls = 'datatable-body-row';
+            if (this.isSelected)
+                cls += ' active';
+            if (this.row.$$index % 2 !== 0)
+                cls += ' datatable-row-odd';
+            if (this.row.$$index % 2 === 0)
+                cls += ' datatable-row-even';
+            if (this.rowClass) {
+                var res = this.rowClass(this.row);
+                if (typeof res === 'string') {
+                    cls += res;
+                }
+                else if (typeof res === 'object') {
+                    var keys = Object.keys(res);
+                    for (var _i = 0, keys_1 = keys; _i < keys_1.length; _i++) {
+                        var k = keys_1[_i];
+                        if (res[k] === true)
+                            cls += " " + k;
+                    }
+                }
+            }
+            return cls;
         },
         enumerable: true,
         configurable: true
@@ -49,22 +64,6 @@ var DataTableBodyRowComponent = (function () {
         enumerable: true,
         configurable: true
     });
-    // @HostListener('window:resize', ['$event'])
-    // onResize(event) {
-    //   console.log(event);
-    // }
-    // @HostListener('window:resize', ['$event'])
-    // // @throttleable(5)
-    // onResize(event) {
-    //   let self = this;
-    //   this.timeout = setTimeout(function() {
-    //      for (let index = 0; index < self.columnsByPin.length; index++) {
-    //       let element = self.columnsByPin[index];
-    //       // self.stylesByGroup(element.type);
-    //     }
-    //   }, 1000);
-    //   // console.log(this.columnsByPin)
-    // }
     DataTableBodyRowComponent.prototype.trackByGroups = function (index, colGroup) {
         return colGroup.type;
     };
@@ -74,16 +73,18 @@ var DataTableBodyRowComponent = (function () {
     DataTableBodyRowComponent.prototype.stylesByGroup = function (group) {
         var widths = this.columnGroupWidths;
         var offsetX = this.offsetX;
-        var styles = {};
+        var styles = {
+            width: widths[group] + "px"
+        };
         if (group === 'left') {
-            utils_1.translateXY(styles, offsetX, 0);
+            translateXY(styles, offsetX, 0);
         }
         else if (group === 'right') {
             var bodyWidth = parseInt(this.innerWidth + '', 0);
             var totalDiff = widths.total - bodyWidth;
             var offsetDiff = totalDiff - offsetX;
-            var offset = (offsetDiff + utils_1.scrollbarWidth) * -1;
-            utils_1.translateXY(styles, offset, 0);
+            var offset = (offsetDiff + this.scrollbarHelper.width) * -1;
+            translateXY(styles, offset, 0);
         }
         return styles;
     };
@@ -95,11 +96,11 @@ var DataTableBodyRowComponent = (function () {
     DataTableBodyRowComponent.prototype.onKeyDown = function (event) {
         var keyCode = event.keyCode;
         var isTargetRow = event.target === this.element;
-        var isAction = keyCode === utils_1.Keys.return ||
-            keyCode === utils_1.Keys.down ||
-            keyCode === utils_1.Keys.up ||
-            keyCode === utils_1.Keys.left ||
-            keyCode === utils_1.Keys.right;
+        var isAction = keyCode === Keys.return ||
+            keyCode === Keys.down ||
+            keyCode === Keys.up ||
+            keyCode === Keys.left ||
+            keyCode === Keys.right;
         if (isAction && isTargetRow) {
             event.preventDefault();
             event.stopPropagation();
@@ -113,37 +114,35 @@ var DataTableBodyRowComponent = (function () {
     };
     DataTableBodyRowComponent.prototype.recalculateColumns = function (val) {
         if (val === void 0) { val = this.columns; }
-        var colsByPin = utils_1.columnsByPin(val);
-        this.columnsByPin = utils_1.columnsByPinArr(val);
-        this.columnGroupWidths = utils_1.columnGroupWidths(colsByPin, val);
-    };
-    DataTableBodyRowComponent.decorators = [
-        { type: core_1.Component, args: [{
-                    selector: 'datatable-body-row',
-                    template: "\n    <div\n      *ngFor=\"let colGroup of columnsByPin; let i = index; trackBy: trackByGroups\"\n      class=\"datatable-row-{{colGroup.type}} datatable-row-group\"\n      [ngStyle]=\"stylesByGroup(colGroup.type)\">\n      <datatable-body-cell\n        *ngFor=\"let column of colGroup.columns; let ii = index; trackBy: columnTrackingFn\"\n        tabindex=\"-1\"\n        [row]=\"row\"\n        [isSelected]=\"isSelected\"\n        [column]=\"column\"\n        [rowHeight]=\"rowHeight\"\n        (activate)=\"onActivate($event, ii)\">\n      </datatable-body-cell>\n    </div>\n  ",
-                    host: {
-                        class: 'datatable-body-row'
-                    }
-                },] },
-    ];
-    /** @nocollapse */
-    DataTableBodyRowComponent.ctorParameters = function () { return [
-        { type: core_1.ElementRef, },
-    ]; };
-    DataTableBodyRowComponent.propDecorators = {
-        'columns': [{ type: core_1.Input },],
-        'innerWidth': [{ type: core_1.Input },],
-        'row': [{ type: core_1.Input },],
-        'offsetX': [{ type: core_1.Input },],
-        'rowHeight': [{ type: core_1.HostBinding, args: ['style.height.px',] }, { type: core_1.Input },],
-        'isSelected': [{ type: core_1.HostBinding, args: ['class.active',] }, { type: core_1.Input },],
-        'isEvenRow': [{ type: core_1.HostBinding, args: ['class.datatable-row-even',] },],
-        'isOddRow': [{ type: core_1.HostBinding, args: ['class.datatable-row-odd',] },],
-        'columnsTotalWidths': [{ type: core_1.HostBinding, args: ['style.width.px',] },],
-        'activate': [{ type: core_1.Output },],
-        'onKeyDown': [{ type: core_1.HostListener, args: ['keydown', ['$event'],] },],
+        var colsByPin = columnsByPin(val);
+        this.columnsByPin = columnsByPinArr(val);
+        this.columnGroupWidths = columnGroupWidths(colsByPin, val);
     };
     return DataTableBodyRowComponent;
 }());
-exports.DataTableBodyRowComponent = DataTableBodyRowComponent;
+export { DataTableBodyRowComponent };
+DataTableBodyRowComponent.decorators = [
+    { type: Component, args: [{
+                selector: 'datatable-body-row',
+                template: "\n    <div\n      *ngFor=\"let colGroup of columnsByPin; let i = index; trackBy: trackByGroups\"\n      class=\"datatable-row-{{colGroup.type}} datatable-row-group\"\n      [ngStyle]=\"stylesByGroup(colGroup.type)\">\n      <datatable-body-cell\n        *ngFor=\"let column of colGroup.columns; let ii = index; trackBy: columnTrackingFn\"\n        tabindex=\"-1\"\n        [row]=\"row\"\n        [isSelected]=\"isSelected\"\n        [column]=\"column\"\n        [rowHeight]=\"rowHeight\"\n        (activate)=\"onActivate($event, ii)\">\n      </datatable-body-cell>\n    </div>\n  "
+            },] },
+];
+/** @nocollapse */
+DataTableBodyRowComponent.ctorParameters = function () { return [
+    { type: ScrollbarHelper, },
+    { type: ElementRef, },
+]; };
+DataTableBodyRowComponent.propDecorators = {
+    'columns': [{ type: Input },],
+    'innerWidth': [{ type: Input },],
+    'rowClass': [{ type: Input },],
+    'row': [{ type: Input },],
+    'offsetX': [{ type: Input },],
+    'isSelected': [{ type: Input },],
+    'cssClass': [{ type: HostBinding, args: ['class',] },],
+    'rowHeight': [{ type: HostBinding, args: ['style.height.px',] }, { type: Input },],
+    'columnsTotalWidths': [{ type: HostBinding, args: ['style.width.px',] },],
+    'activate': [{ type: Output },],
+    'onKeyDown': [{ type: HostListener, args: ['keydown', ['$event'],] },],
+};
 //# sourceMappingURL=body-row.component.js.map

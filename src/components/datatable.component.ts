@@ -2,14 +2,15 @@ import {
   Component, Input, Output, ElementRef, EventEmitter, ViewChild,
   HostListener, ContentChildren, OnInit, QueryList, AfterViewInit,
   HostBinding, ContentChild, TemplateRef, IterableDiffer,
-  DoCheck, KeyValueDiffers, ViewEncapsulation
+  DoCheck, KeyValueDiffers, KeyValueDiffer, ViewEncapsulation
 } from '@angular/core';
 
 import {
-  forceFillColumnWidths, adjustColumnWidths, sortRows, scrollbarWidth,
+  forceFillColumnWidths, adjustColumnWidths, sortRows,
   setColumnDefaults, throttleable, translateTemplates
 } from '../utils';
-import { ColumnMode, SortType, SelectionType } from '../types';
+import { ScrollbarHelper } from '../services';
+import { ColumnMode, SortType, SelectionType, TableColumn } from '../types';
 import { DataTableBodyComponent } from './body';
 import { DataTableColumnDirective } from './columns';
 import { DatatableRowDetailDirective } from './row-detail';
@@ -58,6 +59,7 @@ import { DatatableRowDetailDirective } from './row-detail';
         [selectionType]="selectionType"
         [emptyMessage]="messages.emptyMessage"
         [rowIdentity]="rowIdentity"
+        [rowClass]="rowClass"
         [selectCheck]="selectCheck"
         (page)="onBodyPage($event)"
         (activate)="activate.emit($event)"
@@ -122,7 +124,7 @@ export class DatatableComponent implements OnInit, AfterViewInit, DoCheck {
    *
    * @memberOf DatatableComponent
    */
-  @Input() set columns(val: any[]) {
+  @Input() set columns(val: TableColumn[]) {
     if(val) {
       setColumnDefaults(val);
       this.recalculateColumns(val);
@@ -138,7 +140,7 @@ export class DatatableComponent implements OnInit, AfterViewInit, DoCheck {
    * @type {any[]}
    * @memberOf DatatableComponent
    */
-  get columns(): any[] {
+  get columns(): TableColumn[] {
     return this._columns;
   }
 
@@ -324,8 +326,8 @@ export class DatatableComponent implements OnInit, AfterViewInit, DoCheck {
    * @memberOf DatatableComponent
    */
   @Input() cssClasses: any = {
-    sortAscending: 'icon-down',
-    sortDescending: 'icon-up',
+    sortAscending: 'icon-up',
+    sortDescending: 'icon-down',
     pagerLeftArrow: 'icon-left',
     pagerRightArrow: 'icon-right',
     pagerPrevious: 'icon-prev',
@@ -363,6 +365,18 @@ export class DatatableComponent implements OnInit, AfterViewInit, DoCheck {
    * @memberOf DatatableComponent
    */
   @Input() rowIdentity: (x: any) => any = ((x: any) => x);
+
+  /**
+   * Row specific classes. 
+   * Similar implementation to ngClass.
+   * 
+   *  [rowClass]="'first second'"
+   *  [rowClass]="{ 'first': true, 'second': true, 'third': false }"
+   * 
+   * @type {*}
+   * @memberOf DatatableComponent
+   */
+  @Input() rowClass: any;
 
   /**
    * A boolean/function you can use to check whether you want
@@ -647,14 +661,18 @@ export class DatatableComponent implements OnInit, AfterViewInit, DoCheck {
   bodyHeight: number;
   rowCount: number = 0;
   offsetX: number = 0;
-  rowDiffer: IterableDiffer;
+  rowDiffer: KeyValueDiffer<{}, {}>;
   _count: number = 0;
 
   _rows: any[];
-  _columns: any[];
+  _columns: TableColumn[];
   _columnTemplates: QueryList<DataTableColumnDirective>;
 
-  constructor(element: ElementRef, differs: KeyValueDiffers) {
+  constructor(
+    private scrollbarHelper: ScrollbarHelper, 
+    element: ElementRef, 
+    differs: KeyValueDiffers) {
+
     // get ref to elm for measuring
     this.element = element.nativeElement;
     this.rowDiffer = differs.find({}).create(null);
@@ -735,7 +753,7 @@ export class DatatableComponent implements OnInit, AfterViewInit, DoCheck {
    * distribution mode and scrollbar offsets.
    *
    * @param {any[]} [columns=this.columns]
-   * @param {number} [forceIdx=false]
+   * @param {number} [forceIdx=-1]
    * @param {boolean} [allowBleed=this.scrollH]
    * @returns {any[]}
    *
@@ -749,7 +767,7 @@ export class DatatableComponent implements OnInit, AfterViewInit, DoCheck {
 
     let width = this.innerWidth;
     if (this.scrollbarV) {
-      width = width - scrollbarWidth;
+      width = width - this.scrollbarHelper.width;
     }
 
     if (this.columnMode === ColumnMode.force) {
@@ -935,8 +953,10 @@ export class DatatableComponent implements OnInit, AfterViewInit, DoCheck {
       return Object.assign({}, c);
     });
 
-    cols.splice(prevValue, 1);
-    cols.splice(newValue, 0, column);
+    const prevCol = cols[newValue];
+    cols[newValue] = column;
+    cols[prevValue] = prevCol;
+
     this.columns = cols;
 
     this.reorder.emit({
@@ -964,7 +984,9 @@ export class DatatableComponent implements OnInit, AfterViewInit, DoCheck {
     }
 
     this.sorts = sorts;
-    this.bodyComponent.updateOffsetY(0);
+    // Always go to first page when sorting to see the newly sorted data
+    this.offset = 0;
+    this.bodyComponent.updateOffsetY(this.offset);
     this.sort.emit(event);
   }
 

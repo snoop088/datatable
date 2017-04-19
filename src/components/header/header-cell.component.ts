@@ -27,7 +27,7 @@ import { nextSortDir } from '../../utils';
           [innerHTML]="name">
         </span>
       </span>
-      <template
+      <ng-template
         *ngIf="column.headerTemplate"
         [ngTemplateOutlet]="column.headerTemplate"
         [ngOutletContext]="{ 
@@ -35,7 +35,7 @@ import { nextSortDir } from '../../utils';
           sortDir: sortDir,
           sortFn: sortFn
         }">
-      </template>
+      </ng-template>
       <span
         (click)="onSort()"
         [class]="sortClass">
@@ -86,7 +86,8 @@ export class DataTableHeaderCellComponent {
 
   @HostBinding('attr.title')
   get name(): string {
-    return this.column.name || this.column.prop;
+    // guaranteed to have a value by setColumnDefaults() in column-helper.ts
+    return this.column.name;
   }
 
   @HostBinding('style.minWidth.px')
